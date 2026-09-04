@@ -70,7 +70,7 @@ export const getProducts = async (req: Request, res: Response) => {
 
 // GET /api/products/:id
 export const getProduct = async (req: Request, res: Response) => {
-  const product = await prisma.product.findUnoque({
+  const product = await prisma.product.findUnique({
     where: { id: req.params.id as string },
   });
 
