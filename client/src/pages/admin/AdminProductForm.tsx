@@ -1,7 +1,7 @@
 import { ArrowLeftIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { data, Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { categoriesData } from "../../assets/assets";
 import Loading from "../../components/Loading";
 import api from "../../config/api";

@@ -1,7 +1,6 @@
 const FilterPanel = ({
   categories,
   category,
-  organic,
   minPrice,
   maxPrice,
   updateFilter,
