@@ -14,7 +14,7 @@ const generateToken = (id: string) => {
 export const loginPartner = async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
-  if (!email || password) {
+  if (!email || !password) {
     return res.status(400).json({
       message: "Please provide email and password",
     });
@@ -123,7 +123,7 @@ export const getDeliveryDetail = async (req: Request, res: Response) => {
 // Complete delivery with OTP
 // PUT /api/delivery/my-deliveries/:id/complete
 export const completeDelivery = async (req: Request, res: Response) => {
-  const otp = req.body;
+  const {otp} = req.body;
 
   const order = await prisma.order.findFirst({
     where: {

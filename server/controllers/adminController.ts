@@ -121,9 +121,7 @@ export const updateDeliveryPartner = async (req: Request, res: Response) => {
     data.vehicleType = vehicleType;
   }
 
-  if (isActive) {
-    data.isActive = isActive;
-  }
+  data.isActive = isActive;
 
   try {
     const updatedPartner = await prisma.deliveryPartner.update({

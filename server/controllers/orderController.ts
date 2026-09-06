@@ -1,9 +1,9 @@
-// Create order
-
 import { Request, Response } from "express";
+import Stripe from "stripe";
 import { prisma } from "../config/prisma.js";
 import { inngest } from "../inngest/index.js";
 
+// Create order
 // POST /api/orders
 export const createOrders = async (req: Request, res: Response) => {
   const { items, shippingAddress, paymentMethod } = req.body;
@@ -75,6 +75,28 @@ export const createOrders = async (req: Request, res: Response) => {
 
   if (paymentMethod === "card") {
     // stripe payment link
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+
+    const session = await stripe.checkout.sessions.create({
+      success_url: `${req.headers.origin}/orders?clearCart=true`,
+      cancel_url: `${req.headers.origin}/checkout`,
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: "Payment Groceries",
+            },
+            unit_amount: Math.round(total * 100),
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "payment",
+      metadata: { orderId: order.id },
+    });
+
+    return res.json({ url: session.url });
   }
 
   res.json({ order });
@@ -90,21 +112,21 @@ export const createOrders = async (req: Request, res: Response) => {
   }
 
   // Send stock update events for each product in the order
-  for(const item of orderItems) {
+  for (const item of orderItems) {
     await inngest.send({
-      name: 'inventory/stock.updated',
+      name: "inventory/stock.updated",
       data: {
-        productId: item.product
-      }
-    })
+        productId: item.product,
+      },
+    });
   }
 
   await inngest.send({
     name: "order/placed",
     data: {
-      orderId: order.id
-    }
-  })
+      orderId: order.id,
+    },
+  });
 };
 
 // Get user's orders
@@ -114,7 +136,7 @@ export const getUserOrders = async (req: Request, res: Response) => {
 
   const where: any = {
     userId: req.user!.id,
-    NOT: [{ paymendMethod: "card", isPaid: false }],
+    NOT: [{ paymentMethod: "card", isPaid: false }],
   };
 
   if (status && status !== "all") {

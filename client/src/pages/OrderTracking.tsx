@@ -1,11 +1,11 @@
 import { ArrowLeftIcon, MapIcon, PhoneIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { dummyDashboardOrdersData } from "../assets/assets";
 import Loading from "../components/Loading";
 import LiveMap from "../components/OrderTracking/LiveMap";
 import OrderOTP from "../components/OrderTracking/OrderOTP";
 import OrderTimeLine from "../components/OrderTracking/OrderTimeLine";
+import api from "../config/api";
 import type { Order } from "../types";
 
 const OrderTracking = () => {
@@ -20,9 +20,46 @@ const OrderTracking = () => {
   } | null>(null);
 
   useEffect(() => {
-    setOrder(dummyDashboardOrdersData.find((o) => o._id === id) as any);
-    setLoading(false);
+    api
+      .get(`/orders/${id}`)
+      .then((res) => {
+        setOrder(res.data.order);
+      })
+      .catch(() => {
+        navigate("/orders");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [id, navigate]);
+
+  // live location every 10 seconds
+  useEffect(() => {
+    if (!order || ["Delivered", "Cancelled", "Placed"].includes(order.status)) {
+      return;
+    }
+
+    const fetchLocation = async () => {
+      try {
+        const { data } = await api.get(`/orders/${id}/location`);
+
+        if (data.liveLocation?.lat && data.liveLocation?.lng) {
+          setLiveLocation({
+            lat: data.liveLocation.lat,
+            lng: data.liveLocation.lng,
+          });
+        }
+        // Also update order status if it's changed
+        if (data.status && data.status !== order.status) {
+          setOrder((prev) => (prev ? { ...prev, status: data.status } : prev));
+        }
+      } catch {}
+    };
+
+    fetchLocation();
+    const interval = setInterval(fetchLocation, 10000);
+    return () => clearInterval(interval);
+  }, [id, order?.status]);
 
   if (loading) {
     return <Loading />;
@@ -46,7 +83,7 @@ const OrderTracking = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-2xl font-semibold text-app-green">
-              Order #{order!._id.slice(-8).toUpperCase()}
+              Order #{order!.id.slice(-8).toUpperCase()}
             </h1>
             <p className="text-sm text-app-text-light mt-1">
               Placed on{" "}
